@@ -107,7 +107,7 @@ DEFAULT_CONFIG = {
         "location": "City, Country",
         "phone": "123-456-7890",
         "email": "your.email@example.com",
-        "linkedin": "https://linkedin.com/in/yourusername",
+        "linkedin": "https://linkedin.com/in/username",
         "portfolio": "https://yourportfolio.com",
         "github": "https://github.com/yourusername"
     },
@@ -458,7 +458,7 @@ Guidelines:
 # *** CUSTOMIZE Cover Letter here ***
 
 # function: generate PDF CV and return as base64 string"""
-def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
+def generate_cv_pdf(job_info: dict, cv_content: dict, config: dict) -> str:
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
         doc = SimpleDocTemplate(
             tmp_file.name,
@@ -479,17 +479,17 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         elements = []
         
         # header
-        elements.append(Paragraph("Anish Reddy", styles['Header']))
-        elements.append(Paragraph("Waterloo, Canada", styles['ContactInfo']))
+        elements.append(Paragraph(config['personal_info']['full_name'], styles['Header']))
+        elements.append(Paragraph(config['personal_info']['location'], styles['ContactInfo']))
         elements.append(Spacer(1, 5))
         
         # contact Info
         contact_info = (
-            "437-557-2209 | "
-            '<font color="blue"><u><link href="https://linkedin.com/in/anishreddyk">LinkedIn</link></u></font> | '
-            '<font color="blue"><u><link href="https://anishreddyk.com">Portfolio</link></u></font> | '
-            '<font color="blue"><u><link href=https://github.com/Anish-Reddy-K">Github</link></u></font> | '
-            '<font color="blue"><u><link href="mailto:anishreddy3456@gmail.com">anishreddy3456@gmail.com</link></u></font>'
+            f"{config['personal_info']['phone']} | "
+            f'<font color="blue"><u><link href="{config["personal_info"]["linkedin"]}">LinkedIn</link></u></font> | '
+            f'<font color="blue"><u><link href="{config["personal_info"]["portfolio"]}">Portfolio</link></u></font> | '
+            f'<font color="blue"><u><link href="{config["personal_info"]["github"]}">Github</link></u></font> | '
+            f'<font color="blue"><u><link href="mailto:{config["personal_info"]["email"]}">{config["personal_info"]["email"]}</link></u></font>'
         )
         elements.append(Paragraph(contact_info, styles['LinkStyle']))
         elements.append(Spacer(1, 30))
@@ -526,7 +526,7 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         # signature
         elements.append(Spacer(1, 20))
         elements.append(Paragraph("Sincerely,", styles['Normal']))
-        elements.append(Paragraph("Anish Reddy", styles['Normal']))
+        elements.append(Paragraph(config['personal_info']['full_name'], styles['Normal']))
         
         doc.build(elements)
         
@@ -638,7 +638,8 @@ def main():
             }
             
             if st.button("Preview CV"):
-                st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content)
+                config = load_config()  # Get current config
+                st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content, config)
             
             if hasattr(st.session_state, 'cv_pdf'):
                 st.subheader("CV Preview")
