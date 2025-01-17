@@ -99,36 +99,66 @@ def save_api_key(api_key):
 # initialize OpenAI client with None - will be set when API key is provided
 client = None
 
-# constants
+###########################################################
+# CHANGE MODEL HERE
+AVAILABLE_MODELS = {
+    "GPT-4 Turbo": "gpt-4o",
+    "GPT-4 Turbo (Mini)": "gpt-4o-mini"
+}
+DEFAULT_MODEL = "gpt-4o"
+
+# DO NOT CHANGE ANYTHING HERE, make changes only in the config section under this
+TEMPLATE_PLACEHOLDERS = {
+    "job_info": {
+        "company_name": "Name of the company",
+        "position_title": "Job title/position",
+        "hiring_manager_name": "Hiring manager's name (defaults to 'Hiring Manager')",
+        "specific_work": "Brief job description/responsibilities",
+        "required_skills": "Required skills for the position",
+        "company_mission": "Company's mission statement",
+        "candidate_matches": "Matches between your resume and job requirements"
+    },
+    "personal_info": {
+        "full_name": "Your full name",
+        "location": "Your location",
+        "phone": "Your phone number",
+        "email": "Your email address",
+        "linkedin": "Your LinkedIn URL",
+        "portfolio": "Your portfolio URL",
+        "github": "Your GitHub URL"
+    }
+}
+
+# MAKE CHANGES HERE IF NEEDED
+# config
 CONFIG_FILE = "config.json"
 DEFAULT_CONFIG = {
     "personal_info": {
         "full_name": "Your Name",
         "location": "City, Country",
         "phone": "123-456-7890",
-        "email": "your.email@example.com",
+        "email": "email@example.com",
         "linkedin": "https://linkedin.com/in/username",
         "portfolio": "https://yourportfolio.com",
-        "github": "https://github.com/yourusername"
+        "github": "https://github.com/username"
     },
     "resume_path": "resume_context.txt",
     "templates": {
         "email": {
-            "subject": "Follow-Up on {position_title} Application",
-            "body": """Hi {hiring_manager_name},
+            "subject": "Application Follow-Up - {position_title} Position",
+            "body": """Dear {hiring_manager_name},
 
-I hope you are doing well. I recently applied for the {position_title} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {company_name} and help {specific_work}
+I'm writing to follow up on my application for the {position_title} position at {company_name}.
 
-I understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.
-
-I look forward to hearing from you soon.
-
-Sincerely,
+Best regards,
 {full_name}"""
         },
-        "linkedin": """Hi! I'm interested in the {position_title} role at {company_name}. My background includes {required_skills}. Looking forward to connecting!"""
-    }
+        "linkedin": """Hello! I'm interested in the {position_title} opportunity at {company_name}."""
+    },
+    "model": DEFAULT_MODEL
 }
+
+###########################################################
 
 # function: load user data from config json file
 def load_config():
@@ -219,6 +249,16 @@ def settings_sidebar():
     global client
     client = OpenAI(api_key=api_key)
     
+    # model Selection
+    st.sidebar.divider()
+    selected_model = st.sidebar.selectbox(
+        "Select GPT Model",
+        options=list(AVAILABLE_MODELS.keys()),
+        index=list(AVAILABLE_MODELS.values()).index(config.get('model', DEFAULT_MODEL)),
+        help="GPT-4o offers higher quality but may be slower and costs more. Mini version is faster, less expensive but might produce less detailed results."
+    )
+    config['model'] = AVAILABLE_MODELS[selected_model]
+
     st.sidebar.divider()
 
     # load current config and ensure templates exist
@@ -238,29 +278,63 @@ def settings_sidebar():
             key=f"settings_{key}"
         )
     
-    # template settings
+    # Template settings
     st.sidebar.divider()
     st.sidebar.subheader("Message Templates")
     
-    with st.sidebar.expander("Email Templates"):
+    # Template documentation
+    with st.sidebar.expander("📝 Available Template Placeholders", expanded=False):
+        st.markdown("""
+        ### Job Information Placeholders
+        - `{company_name}` - Company name
+        - `{position_title}` - Job title
+        - `{hiring_manager_name}` - Hiring manager's name
+        - `{specific_work}` - Job responsibilities
+        - `{required_skills}` - Required skills
+        - `{company_mission}` - Company mission
+        - `{candidate_matches}` - Resume matches
+        
+        ### Personal Information Placeholders
+        - `{full_name}` - Your name
+        - `{location}` - Your location
+        - `{phone}` - Your phone
+        - `{email}` - Your email
+        - `{linkedin}` - Your LinkedIn URL
+        - `{portfolio}` - Your portfolio URL
+        - `{github}` - Your GitHub URL
+        
+        ### Usage Example
+        ```
+        Dear {hiring_manager_name},
+        
+        I'm writing about the {position_title} position at {company_name}...
+        
+        Best regards,
+        {full_name}
+        ```
+        """)
+    
+    with st.sidebar.expander("✉️ Email Templates"):
+        st.info("Customize these templates with your own professional style using the placeholders shown above.")
         email_subject = st.text_input(
             "Email Subject Template",
             value=config['templates']['email']['subject'],
-            help="Use {placeholder} format. Available: {position_title}, {company_name}, etc."
+            help="Use {placeholder} format. Example: Application Follow-Up - {position_title} Position"
         )
         email_body = st.text_area(
             "Email Body Template",
             value=config['templates']['email']['body'],
             height=200,
-            help="Use {placeholder} format. Available: all job_info and personal_info fields"
+            help="Use placeholders like {hiring_manager_name}, {position_title}, {company_name}, etc."
         )
     
-    with st.sidebar.expander("LinkedIn Template"):
+    with st.sidebar.expander("🔗 LinkedIn Template"):
+        st.info("Keep your message under 200 characters. Use placeholders to personalize.")
         linkedin_message = st.text_area(
             "LinkedIn Message Template",
             value=config['templates']['linkedin'],
             height=100,
-            help="Use {placeholder} format. Must be under 200 characters"
+            help="Must be under 200 characters. Example: Interested in the {position_title} role at {company_name}..."
         )
     
     # update the save button section
@@ -312,7 +386,7 @@ def generate_linkedin_message(job_info: dict, config: dict) -> str:
         return f"Hi! I'm interested in the {job_info['position_title']} role at {job_info['company_name']}. Looking forward to connecting!"
     
 # function: extract relevant information from job description using gpt-4o or gpt-4o-mini"""
-def extract_job_info(job_description: str, resume_context: str) -> dict:
+def extract_job_info(job_description: str, resume_context: str, config: dict) -> dict:
     try:
         system_prompt = """You are an expert AI career consultant. Your task is to:
         1. Analyze the provided job description
@@ -334,7 +408,7 @@ def extract_job_info(job_description: str, resume_context: str) -> dict:
 
         completion = client.chat.completions.create(
             # change to gpt-4o-mini for less API token usage
-            model="gpt-4o",
+            model=config['model'],
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"""
@@ -394,7 +468,7 @@ def generate_email(job_info: dict, config: dict) -> tuple:
                 f"Hi {job_info['hiring_manager_name']},\n\nFollowing up on my {job_info['position_title']} application.\n\nBest,\n{config['personal_info']['full_name']}")
 
 # function: Generate CV content using gpt-4o or gpt-4o-mini"""
-def generate_cv_content(job_info: dict, resume_context: str) -> dict:
+def generate_cv_content(job_info: dict, resume_context: str, config: dict) -> dict:
     try:
         system_prompt = """You are an expert CV writer for tech industry applications. 
 
@@ -428,7 +502,7 @@ Guidelines:
 
         completion = client.chat.completions.create(
             # change to gpt-4o-mini for less API token usage
-            model="gpt-4o",
+            model=config['model'],
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"""
@@ -558,6 +632,19 @@ def main():
     
     st.divider()
 
+    st.markdown("""
+    ### 💡 Quick Tips
+    1. Upload your resume (PDF or TXT)
+    2. Configure your personal information in the sidebar
+    3. The sidebar's width can be extended for easier editing
+    4. Customize message templates in the sidebar to match your style
+    5. Paste a job description and click "Generate Documents"
+    
+    > **Note:** The default templates are basic examples. For best results, customize them in the sidebar with your own professional style using the available placeholders.
+    """)
+
+    st.divider()
+
     # settings sidebar
     settings_sidebar()
     
@@ -583,11 +670,11 @@ def main():
     
     if st.button("Generate Documents", type="primary") and job_description:
         with st.spinner('Analyzing job description and generating documents...'):
-            st.session_state.job_info = extract_job_info(job_description, resume_context)
             config = load_config()
+            st.session_state.job_info = extract_job_info(job_description, resume_context, config)
 
             # generate all documents at once
-            st.session_state.cv_content = generate_cv_content(st.session_state.job_info, resume_context)
+            st.session_state.cv_content = generate_cv_content(st.session_state.job_info, resume_context, config)
             subject, body = generate_email(st.session_state.job_info, config)
             st.session_state.email_content = {"subject": subject, "body": body}
             st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info, config)
@@ -638,7 +725,7 @@ def main():
             }
             
             if st.button("Preview CV"):
-                config = load_config()  # Get current config
+                config = load_config()  # get current config
                 st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content, config)
             
             if hasattr(st.session_state, 'cv_pdf'):
