@@ -613,7 +613,7 @@ def generate_cv_pdf(job_info: dict, cv_content: dict, config: dict) -> str:
         return encoded_pdf
 
 def main():
-    st.set_page_config(page_title="Dear Hassle - Job Application Assistant", layout="wide")
+    st.set_page_config(page_title="Dear Hassle - Job Application Assistant", layout="wide", page_icon="logo.ico")
     
     st.title("Dear Hassle ✍️")
     st.markdown("""
