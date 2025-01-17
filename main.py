@@ -102,8 +102,8 @@ client = None
 ###########################################################
 # CHANGE MODEL HERE
 AVAILABLE_MODELS = {
-    "GPT-4 Turbo": "gpt-4o",
-    "GPT-4 Turbo (Mini)": "gpt-4o-mini"
+    "gpt-4o": "gpt-4o",
+    "gpt-4o-mini": "gpt-4o-mini"
 }
 DEFAULT_MODEL = "gpt-4o"
 
@@ -172,22 +172,22 @@ def load_config():
     
 # function: ensure templates exist in config, add them if missing
 def ensure_templates_in_config(config):
+    """Ensure templates exist in config, add them if missing"""
+    if 'model' not in config:
+        config['model'] = DEFAULT_MODEL
+        
     if 'templates' not in config:
         config['templates'] = {
             "email": {
-                "subject": "Follow-Up on {position_title} Application",
-                "body": """Hi {hiring_manager_name},
+                "subject": "Application Follow-Up - {position_title} Position",
+                "body": """Dear {hiring_manager_name},
 
-I hope you are doing well. I recently applied for the {position_title} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {company_name} and help {specific_work}
+I'm writing to follow up on my application for the {position_title} position at {company_name}.
 
-I understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.
-
-I look forward to hearing from you soon.
-
-Sincerely,
+Best regards,
 {full_name}"""
             },
-            "linkedin": """Hi! I'm interested in the {position_title} role at {company_name}. My background includes {required_skills}. Looking forward to connecting!"""
+            "linkedin": """Hello! I'm interested in the {position_title} opportunity at {company_name}."""
         }
         save_config(config)
     return config
@@ -222,9 +222,10 @@ def extract_text_from_pdf(pdf_file):
 
 # function: create a settings sidebar for personal information and templates"""
 def settings_sidebar():
+    """Create a settings sidebar for personal information and templates"""
     st.sidebar.title("Settings")
     
-    # API key Management
+    # API Key Management
     if 'api_key' not in st.session_state:
         st.session_state.api_key = os.getenv('OPENAI_API_KEY', '')
     
@@ -249,21 +250,22 @@ def settings_sidebar():
     global client
     client = OpenAI(api_key=api_key)
     
-    # model Selection
+    # Load current config and ensure templates exist
+    config = load_config()
+    config = ensure_templates_in_config(config)
+    
+    # Model Selection
     st.sidebar.divider()
     selected_model = st.sidebar.selectbox(
         "Select GPT Model",
         options=list(AVAILABLE_MODELS.keys()),
         index=list(AVAILABLE_MODELS.values()).index(config.get('model', DEFAULT_MODEL)),
-        help="GPT-4o offers higher quality but may be slower and costs more. Mini version is faster, less expensive but might produce less detailed results."
+        help="GPT-4 Turbo offers higher quality but may be slower. Mini version is faster but might be slightly less detailed."
     )
     config['model'] = AVAILABLE_MODELS[selected_model]
-
+    
     st.sidebar.divider()
-
-    # load current config and ensure templates exist
-    config = load_config()
-    config = ensure_templates_in_config(config)
+    
     personal_info = config['personal_info']
     
     
@@ -391,16 +393,16 @@ def extract_job_info(job_description: str, resume_context: str, config: dict) ->
         system_prompt = """You are an expert AI career consultant. Your task is to:
         1. Analyze the provided job description
         2. Review the candidate's resume
-        3. Identify key matches and alignment between the two
+        3. Identify key matches and alignment between the job description and resume
         
         Return a JSON object with the following structure:
         {
             "company_name": "Name of the company",
-            "position_title": "Title of the position",
+            "position_title": "Job title / position",
             "hiring_manager_name": "Name if available, otherwise 'Hiring Manager'",
             "specific_work": "Brief description of specific work/responsibilities (1 sentence)",
-            "required_skills": "Bullet points of 5-7 most important required skills, separated by <br/>",
-            "company_mission": "Company mission or focus area from the description",
+            "required_skills": "Bullet points of 5 most important required skills for the position, separated by <br/>",
+            "company_mission": "Companies mission statement or focus area from the description",
             "candidate_matches": "5 strongest matches between resume and job requirements, separated by <br/>"
         }
 
@@ -617,7 +619,8 @@ def main():
     st.markdown("""
         Your AI-powered job application assistant. Generate tailored cover letters, follow-up emails, and LinkedIn messages in seconds.
         
-        Created by [Anish Reddy](https://www.linkedin.com/in/anishreddyk/) | 
+        Created by Anish Reddy | 
+        [LinkedIn](https://www.linkedin.com/in/anishreddyk/) |
         [Portfolio](https://anishreddyk.com/) | 
         [Email](mailto:anishreddy3456@gmail.com)
         

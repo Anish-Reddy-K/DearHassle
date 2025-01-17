@@ -1,0 +1,20 @@
+{
+    "personal_info": {
+        "full_name": "Your Name",
+        "location": "City, Country",
+        "phone": "123-456-7890",
+        "email": "email@example.com",
+        "linkedin": "https://linkedin.com/in/username",
+        "portfolio": "https://yourportfolio.com",
+        "github": "https://github.com/username"
+    },
+    "resume_path": "resume_context.txt",
+    "templates": {
+        "email": {
+            "subject": "Application Follow-Up - {position_title} Position",
+            "body": "Dear {hiring_manager_name},\n\nI'm writing to follow up on my application for the {position_title} position at {company_name}.\n\nBest regards,\n{full_name}"
+        },
+        "linkedin": "Hello! I'm interested in the {position_title} opportunity at {company_name}."
+    },
+    "model": "gpt-4o"
+}
