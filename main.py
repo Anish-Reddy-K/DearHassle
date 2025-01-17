@@ -434,8 +434,13 @@ def main():
         with st.spinner('Analyzing job description and generating documents...'):
             # Extract job information and store in session state
             st.session_state.job_info = extract_job_info(job_description, resume_context)
-            # Generate initial CV content
+            # Generate all documents at once
             st.session_state.cv_content = generate_cv_content(st.session_state.job_info, resume_context)
+            subject, body = generate_email(st.session_state.job_info)
+            st.session_state.email_content = {"subject": subject, "body": body}
+            st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info)
+            # Generate PDF preview
+            st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, st.session_state.cv_content)
     
     if hasattr(st.session_state, 'job_info'):
         if 'current_tab' not in st.session_state:
@@ -478,29 +483,29 @@ def main():
             }
             
             if st.button("Preview CV"):
-                encoded_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content)
+                st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content)
+            
+            if hasattr(st.session_state, 'cv_pdf'):
                 st.subheader("CV Preview")
-                pdf_display = f'<iframe src="data:application/pdf;base64,{encoded_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
+                pdf_display = f'<iframe src="data:application/pdf;base64,{st.session_state.cv_pdf}" width="700" height="1000" type="application/pdf"></iframe>'
                 st.markdown(pdf_display, unsafe_allow_html=True)
                 
                 st.download_button(
                     label="Download",
-                    data=base64.b64decode(encoded_pdf),
+                    data=base64.b64decode(st.session_state.cv_pdf),
                     file_name=f"{st.session_state.job_info['company_name'].lower().replace(' ', '_')}_Cover_Letter.pdf",
                     mime="application/pdf"
                 )
                 
         elif st.session_state.current_tab == "Follow-up Email":
-            subject, body = generate_email(st.session_state.job_info)
             st.subheader("Subject:")
-            st.code(subject, language=None)
+            st.code(st.session_state.email_content["subject"], language=None)
             st.subheader("Email Body:")
-            st.code(body, language=None, wrap_lines=True)
+            st.code(st.session_state.email_content["body"], language=None, wrap_lines=True)
         else:  # LinkedIn Message
-            message = generate_linkedin_message(st.session_state.job_info)
             st.subheader("LinkedIn Connection Message:")
-            st.code(message, language=None, wrap_lines=True)
-            st.caption(f"Character count: {len(message)}/200")
+            st.code(st.session_state.linkedin_message, language=None, wrap_lines=True)
+            st.caption(f"Character count: {len(st.session_state.linkedin_message)}/200")
 
 if __name__ == "__main__":
     main()
