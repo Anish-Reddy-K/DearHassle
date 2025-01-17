@@ -1,0 +1,12 @@
+{
+    "personal_info": {
+        "full_name": "Anish Reddy",
+        "location": "Waterloo, ON",
+        "phone": "123-456-7890",
+        "email": "your.email@example.com",
+        "linkedin": "https://linkedin.com/in/yourusername",
+        "portfolio": "https://yourportfolio.com",
+        "github": "https://github.com/yourusername"
+    },
+    "resume_path": "resume_context.txt"
+}
