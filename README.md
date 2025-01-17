@@ -16,6 +16,8 @@ Dear Hassle is an AI-powered tool that helps streamline your job application pro
 
 ## 🚀 Quick Setup
 
+Open your terminal and follow the instructions below:
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Anish-Reddy-K/DearHassle.git
