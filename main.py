@@ -99,7 +99,7 @@ def save_api_key(api_key):
 # initialize OpenAI client with None - will be set when API key is provided
 client = None
 
-###########################################################
+
 # CHANGE MODEL HERE
 AVAILABLE_MODELS = {
     "gpt-4o": "gpt-4o",
@@ -158,7 +158,6 @@ Best regards,
     "model": DEFAULT_MODEL
 }
 
-###########################################################
 
 # function: load user data from config json file
 def load_config():
@@ -225,7 +224,7 @@ def settings_sidebar():
     """Create a settings sidebar for personal information and templates"""
     st.sidebar.title("Settings")
     
-    # API Key Management
+    # aPI Key Management
     if 'api_key' not in st.session_state:
         st.session_state.api_key = os.getenv('OPENAI_API_KEY', '')
     
@@ -248,13 +247,17 @@ def settings_sidebar():
         st.stop()
     
     global client
-    client = OpenAI(api_key=api_key)
+    try:
+        client = OpenAI(api_key=api_key)
+    except Exception as e:
+        st.error(f"Error initializing OpenAI client: {str(e)}")
+        st.stop()
     
-    # Load current config and ensure templates exist
+    # load current config and ensure templates exist
     config = load_config()
     config = ensure_templates_in_config(config)
     
-    # Model Selection
+    # model Selection
     st.sidebar.divider()
     selected_model = st.sidebar.selectbox(
         "Select GPT Model",
