@@ -489,7 +489,7 @@ def main():
         [Portfolio](https://anishreddyk.com/) | 
         [Email](mailto:anishreddy3456@gmail.com)
         
-        If you find this tool helpful, consider supporting its development:
+        If you found this tool helpful in your job search, your support would mean a lot! It helps me continue building free tools that make a difference.
     """)
     
     # Buy Me a Coffee button
@@ -535,21 +535,26 @@ def main():
             st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info, config)
     
     if hasattr(st.session_state, 'job_info'):
+        # Initialize current_tab if not present
         if 'current_tab' not in st.session_state:
             st.session_state.current_tab = "Cover Letter"
 
-        st.session_state.current_tab = st.radio(
+        # Create a key for the radio button to ensure proper state management
+        current_tab = st.radio(
             "Select Document",
             ["Cover Letter", "Follow-up Email", "LinkedIn Message"],
             horizontal=True,
             label_visibility="hidden",
-            index=0 if st.session_state.current_tab == "Cover Letter" else 
-                  1 if st.session_state.current_tab == "Follow-up Email" else 2
+            key="doc_selector"  # Add a unique key
         )
+
+        # Update the session state if changed
+        if current_tab != st.session_state.current_tab:
+            st.session_state.current_tab = current_tab
         
         st.divider()
-        
-        if st.session_state.current_tab == "Cover Letter":
+
+        if current_tab == "Cover Letter":
             st.subheader("Edit CV")
             
             edited_about_me = st.text_area(
@@ -589,12 +594,13 @@ def main():
                     mime="application/pdf"
                 )
                 
-        elif st.session_state.current_tab == "Follow-up Email":
+        elif current_tab == "Follow-up Email":
             st.subheader("Subject:")
             st.code(st.session_state.email_content["subject"], language=None)
             st.subheader("Email Body:")
             st.code(st.session_state.email_content["body"], language=None, wrap_lines=True)
-        else:  # LinkedIn Message
+        
+        elif current_tab == "LinkedIn Message":  # LinkedIn Message
             st.subheader("LinkedIn Connection Message:")
             st.code(st.session_state.linkedin_message, language=None, wrap_lines=True)
             st.caption(f"Character count: {len(st.session_state.linkedin_message)}/200")
