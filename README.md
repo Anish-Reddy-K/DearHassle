@@ -92,7 +92,7 @@ Customize templates using placeholders:
 
 ## 🤝 Support
 
-If you find Dear Hassle helpful in your job search journey, consider supporting its development:
+If you found this tool helpful in your job search, your support would mean a lot! It helps me continue building free tools that make a difference.
 
 <a href="https://www.buymeacoffee.com/anishreddyk"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=anishreddyk&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" /></a>
 
