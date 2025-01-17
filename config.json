@@ -8,5 +8,12 @@
         "portfolio": "https://yourportfolio.com",
         "github": "https://github.com/yourusername"
     },
-    "resume_path": "resume_context.txt"
+    "resume_path": "resume_context.txt",
+    "templates": {
+        "email": {
+            "subject": "Follow-Up on {position_title} Application test",
+            "body": "Hi {hiring_manager_name},\n\nI hope you are doing well. I recently applied for the {position_title} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {company_name} and help {specific_work}\n\nI understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.\n\nI look forward to hearing from you soon.\n\nSincerely,\n{full_name}"
+        },
+        "linkedin": "Hi! I'm interested in the {position_title} role at {company_name}. My background includes {required_skills}. Looking forward to connecting!"
+    }
 }

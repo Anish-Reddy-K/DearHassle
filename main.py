@@ -53,7 +53,23 @@ DEFAULT_CONFIG = {
         "portfolio": "https://yourportfolio.com",
         "github": "https://github.com/yourusername"
     },
-    "resume_path": "resume_context.txt"
+    "resume_path": "resume_context.txt",
+    "templates": {
+        "email": {
+            "subject": "Follow-Up on {position_title} Application",
+            "body": """Hi {hiring_manager_name},
+
+I hope you are doing well. I recently applied for the {position_title} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {company_name} and help {specific_work}
+
+I understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.
+
+I look forward to hearing from you soon.
+
+Sincerely,
+{full_name}"""
+        },
+        "linkedin": """Hi! I'm interested in the {position_title} role at {company_name}. My background includes {required_skills}. Looking forward to connecting!"""
+    }
 }
 
 def load_config():
@@ -66,6 +82,28 @@ def load_config():
         save_config(DEFAULT_CONFIG)
         return DEFAULT_CONFIG
     
+def ensure_templates_in_config(config):
+    """Ensure templates exist in config, add them if missing"""
+    if 'templates' not in config:
+        config['templates'] = {
+            "email": {
+                "subject": "Follow-Up on {position_title} Application",
+                "body": """Hi {hiring_manager_name},
+
+I hope you are doing well. I recently applied for the {position_title} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {company_name} and help {specific_work}
+
+I understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.
+
+I look forward to hearing from you soon.
+
+Sincerely,
+{full_name}"""
+            },
+            "linkedin": """Hi! I'm interested in the {position_title} role at {company_name}. My background includes {required_skills}. Looking forward to connecting!"""
+        }
+        save_config(config)
+    return config
+
 def save_config(config):
     """Save user configuration to JSON file"""
     with open(CONFIG_FILE, 'w') as f:
@@ -95,7 +133,7 @@ def extract_text_from_pdf(pdf_file):
     return text
 
 def settings_sidebar():
-    """Create a settings sidebar for personal information"""
+    """Create a settings sidebar for personal information and templates"""
     st.sidebar.title("Settings")
     
     # API Key Management
@@ -125,9 +163,11 @@ def settings_sidebar():
     
     st.sidebar.divider()
 
-    # Load current config
+    # Load current config and ensure templates exist
     config = load_config()
+    config = ensure_templates_in_config(config)
     personal_info = config['personal_info']
+    
     
     st.sidebar.subheader("Personal Information")
     updated_info = {}
@@ -140,11 +180,39 @@ def settings_sidebar():
             key=f"settings_{key}"
         )
     
-    # Save button for personal information
-    if st.sidebar.button("Save Personal Information"):
+    # Template settings
+    st.sidebar.divider()
+    st.sidebar.subheader("Message Templates")
+    
+    with st.sidebar.expander("Email Templates"):
+        email_subject = st.text_input(
+            "Email Subject Template",
+            value=config['templates']['email']['subject'],
+            help="Use {placeholder} format. Available: {position_title}, {company_name}, etc."
+        )
+        email_body = st.text_area(
+            "Email Body Template",
+            value=config['templates']['email']['body'],
+            height=200,
+            help="Use {placeholder} format. Available: all job_info and personal_info fields"
+        )
+    
+    with st.sidebar.expander("LinkedIn Template"):
+        linkedin_message = st.text_area(
+            "LinkedIn Message Template",
+            value=config['templates']['linkedin'],
+            height=100,
+            help="Use {placeholder} format. Must be under 200 characters"
+        )
+    
+    # Update the save button section
+    if st.sidebar.button("Save All Settings"):
         config['personal_info'] = updated_info
+        config['templates']['email']['subject'] = email_subject
+        config['templates']['email']['body'] = email_body
+        config['templates']['linkedin'] = linkedin_message
         save_config(config)
-        st.sidebar.success("Settings saved successfully!")
+        st.sidebar.success("All settings saved successfully!")
         st.rerun()
 
 def resume_uploader():
@@ -162,25 +230,22 @@ def resume_uploader():
     
     return load_resume_context()
 
-def generate_linkedin_message(job_info: dict) -> str:
-    """Generate LinkedIn connection message"""
+def generate_linkedin_message(job_info: dict, config: dict) -> str:
+    """Generate LinkedIn connection message using template"""
     try:
-        system_prompt = """Generate a LinkedIn connection message for a job application. 
-        The message must be under 200 characters total.
-        Focus on being concise while showing genuine interest in the role.
-        Include your relevant experience or skill that matches the role."""
-
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Company: {job_info['company_name']}\nPosition: {job_info['position_title']}\nRequired Skills: {job_info['required_skills']}"}
-            ],
-            temperature=0.7,
-            max_tokens=100
-        )
+        # Get template from config
+        template = config['templates']['linkedin']
         
-        message = completion.choices[0].message.content.strip()
+        # Create format dict with all possible placeholders
+        format_dict = {
+            **job_info,
+            **config['personal_info'],
+            'required_skills': job_info['required_skills'].split('<br/>')[0].strip('• ')  # Take first skill only due to character limit
+        }
+        
+        # Format the template
+        message = template.format(**format_dict)
+        
         # Ensure message is under 200 characters
         if len(message) > 200:
             message = message[:197] + "..."
@@ -247,23 +312,28 @@ def extract_job_info(job_description: str, resume_context: str) -> dict:
             "candidate_matches": "• Match 1<br/>• Match 2<br/>• Match 3<br/>• Match 4<br/>• Match 5"
         }
     
-def generate_email(job_info: dict) -> tuple:
+def generate_email(job_info: dict, config: dict) -> tuple:
     """Generate follow-up email using template"""
-    template = f"""Subject: Follow-Up on {job_info['position_title']} Application
-
-Hi {job_info['hiring_manager_name']},
-
-I hope you are doing well. I recently applied for the {job_info['position_title']} position, and wanted to check in on your decision timeline. I am very excited about the opportunity to join {job_info['company_name']} and help {job_info['specific_work']}
-
-I understand how busy you probably are and want to thank you in advance for considering my application. Please let me know if I can provide any additional information.
-
-I look forward to hearing from you soon.
-
-Sincerely,
-Anish Reddy"""
-    
-    parts = template.split("\n\n", 1)
-    return parts[0].replace("Subject: ", ""), parts[1]
+    try:
+        # Get templates from config
+        subject_template = config['templates']['email']['subject']
+        body_template = config['templates']['email']['body']
+        
+        # Create format dict with all possible placeholders
+        format_dict = {
+            **job_info,
+            **config['personal_info']
+        }
+        
+        # Format the templates
+        subject = subject_template.format(**format_dict)
+        body = body_template.format(**format_dict)
+        
+        return subject, body
+    except Exception as e:
+        st.error(f"Error generating email: {str(e)}")
+        return (f"Follow-Up on {job_info['position_title']} Application",
+                f"Hi {job_info['hiring_manager_name']},\n\nFollowing up on my {job_info['position_title']} application.\n\nBest,\n{config['personal_info']['full_name']}")
 
 def generate_cv_content(job_info: dict, resume_context: str) -> dict:
     """Generate CV content using GPT-4"""
@@ -432,15 +502,13 @@ def main():
     
     if st.button("Generate Documents", type="primary") and job_description:
         with st.spinner('Analyzing job description and generating documents...'):
-            # Extract job information and store in session state
             st.session_state.job_info = extract_job_info(job_description, resume_context)
+            config = load_config()
             # Generate all documents at once
             st.session_state.cv_content = generate_cv_content(st.session_state.job_info, resume_context)
-            subject, body = generate_email(st.session_state.job_info)
+            subject, body = generate_email(st.session_state.job_info, config)
             st.session_state.email_content = {"subject": subject, "body": body}
-            st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info)
-            # Generate PDF preview
-            st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, st.session_state.cv_content)
+            st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info, config)
     
     if hasattr(st.session_state, 'job_info'):
         if 'current_tab' not in st.session_state:
