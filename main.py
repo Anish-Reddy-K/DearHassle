@@ -225,7 +225,8 @@ def resume_uploader():
         else:
             content = uploaded_file.getvalue().decode()
         save_resume_context(content)
-        st.success("Resume uploaded successfully!")
+        # Remove this success message since we'll show it in main()
+        # st.success("Resume uploaded successfully!")
         return content
     
     return load_resume_context()
@@ -476,7 +477,29 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         return encoded_pdf
 
 def main():
-    st.title("Job Application Generator")
+    # Update title and add description
+    st.set_page_config(page_title="Dear Hassle - Job Application Assistant", layout="wide")
+    
+    # Title and branding
+    st.title("Dear Hassle ✍️")
+    st.markdown("""
+        Your AI-powered job application assistant. Generate tailored cover letters, follow-up emails, and LinkedIn messages in seconds.
+        
+        Created by [Anish Reddy](https://www.linkedin.com/in/anishreddyk/) | 
+        [Portfolio](https://anishreddyk.com/) | 
+        [Email](mailto:anishreddy3456@gmail.com)
+        
+        If you find this tool helpful, consider supporting its development:
+    """)
+    
+    # Buy Me a Coffee button
+    st.markdown("""
+        <a href="https://www.buymeacoffee.com/anishreddyk" target="_blank">
+            <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40px">
+        </a>
+        """, unsafe_allow_html=True)
+    
+    st.divider()
 
     # Add settings sidebar
     settings_sidebar()
@@ -496,7 +519,8 @@ def main():
                 st.success("Resume updated successfully!")
                 resume_context = edited_resume
 
-    st.write("Paste your job description below to generate a customized email and CV")
+    st.markdown("---")
+    st.text("Paste your job description below to generate a customized email and CV ↓")
     
     job_description = st.text_area("Job Description:", height=200)
     
@@ -574,6 +598,14 @@ def main():
             st.subheader("LinkedIn Connection Message:")
             st.code(st.session_state.linkedin_message, language=None, wrap_lines=True)
             st.caption(f"Character count: {len(st.session_state.linkedin_message)}/200")
+
+        st.markdown("---")
+        st.markdown("""
+            <div style='text-align: center; color: #666666; padding: 20px;'>
+            Made with ❤️ by <a href='https://www.linkedin.com/in/anishreddyk/' target='_blank'>Anish Reddy</a><br>
+            If you found this helpful, you can <a href='https://www.buymeacoffee.com/anishreddyk' target='_blank'>buy me a coffee</a>
+            </div>
+            """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
