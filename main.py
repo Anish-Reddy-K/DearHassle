@@ -80,7 +80,7 @@ load_dotenv()
 def save_api_key(api_key):
     env_path = Path('.env')
     if env_path.exists():
-        with open(env_path, 'r') as f:
+        with open(env_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         key_updated = False
         for i, line in enumerate(lines):
@@ -162,11 +162,14 @@ Best regards,
 # function: load user data from config json file
 def load_config():
     try:
-        with open(CONFIG_FILE, 'r') as f:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
-        # Create default config if it doesn't exist
+        # create default config if it doesn't exist
         save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG
+    except json.JSONDecodeError:
+        st.error("Error reading config file. Using default configuration.")
         return DEFAULT_CONFIG
     
 # function: ensure templates exist in config, add them if missing
@@ -191,33 +194,51 @@ Best regards,
         save_config(config)
     return config
 
-# function: save user configuration to JSON file"""
+# function: save user configuration to JSON file
 def save_config(config):
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=4)
+    try:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4, ensure_ascii=False)
+    except Exception as e:
+        st.error(f"Error saving configuration: {str(e)}")
 
-# function: load resume context from a text file"""
+# function: load resume context from a text file
 def load_resume_context():
     config = load_config()
     try:
-        with open(config['resume_path'], 'r') as f:
+        with open(config['resume_path'], 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
         return None
+    except UnicodeDecodeError:
+        # fallback for files that might be in a different encoding
+        try:
+            with open(config['resume_path'], 'r', encoding='cp1252') as f:
+                return f.read()
+        except:
+            st.error("Error reading resume file. Please ensure it contains valid text.")
+            return None
     
-# function: save resume content to text file"""
+# function: save resume content to text file
 def save_resume_context(content):
     config = load_config()
-    with open(config['resume_path'], 'w') as f:
-        f.write(content)
+    try:
+        with open(config['resume_path'], 'w', encoding='utf-8') as f:
+            f.write(content)
+    except Exception as e:
+        st.error(f"Error saving resume: {str(e)}")
 
-# function: extract text content from PDF file"""
+# function: extract text from PDF
 def extract_text_from_pdf(pdf_file):
-    pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file.read()))
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text() + "\n"
-    return text
+    try:
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file.read()))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text() + "\n"
+        return text
+    except Exception as e:
+        st.error(f"Error extracting text from PDF: {str(e)}")
+        return None
 
 # function: create a settings sidebar for personal information and templates"""
 def settings_sidebar():
