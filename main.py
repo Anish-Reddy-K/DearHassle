@@ -61,7 +61,7 @@ from openai import OpenAI
 import os
 import io
 from dotenv import load_dotenv
-from datetime import date
+from datetime import date, datetime
 import tempfile
 import base64
 import json
@@ -557,11 +557,18 @@ Guidelines:
 
 # *** CUSTOMIZE Cover Letter here ***
 
-# function: generate PDF CV and return as base64 string"""
+# function: generate PDF CV and return as base64 string
 def generate_cv_pdf(job_info: dict, cv_content: dict, config: dict) -> str:
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+    # Create a temporary file with a unique name
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    temp_dir = tempfile.gettempdir()
+    temp_filename = f'cv_temp_{timestamp}.pdf'
+    temp_filepath = os.path.join(temp_dir, temp_filename)
+    
+    try:
+        # Create the PDF document
         doc = SimpleDocTemplate(
-            tmp_file.name,
+            temp_filepath,
             pagesize=LETTER,
             rightMargin=50,
             leftMargin=50,
@@ -628,13 +635,27 @@ def generate_cv_pdf(job_info: dict, cv_content: dict, config: dict) -> str:
         elements.append(Paragraph("Sincerely,", styles['Normal']))
         elements.append(Paragraph(config['personal_info']['full_name'], styles['Normal']))
         
+        # Build the PDF
         doc.build(elements)
         
-        with open(tmp_file.name, "rb") as pdf_file:
+        # Read the generated PDF and encode it
+        with open(temp_filepath, "rb") as pdf_file:
             encoded_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
-        
-        os.unlink(tmp_file.name)
+            
         return encoded_pdf
+        
+    except Exception as e:
+        st.error(f"Error generating PDF: {str(e)}")
+        return None
+        
+    finally:
+        # Clean up the temporary file
+        try:
+            if os.path.exists(temp_filepath):
+                os.remove(temp_filepath)
+        except Exception as e:
+            st.warning(f"Could not remove temporary file: {str(e)}")
+            # Not a critical error, so we don't need to stop execution
 
 def main():
     st.set_page_config(page_title="Dear Hassle - Job Application Assistant", layout="wide", page_icon="logo.ico")
@@ -752,8 +773,10 @@ def main():
             }
             
             if st.button("Preview CV"):
-                config = load_config()  # get current config
-                st.session_state.cv_pdf = generate_cv_pdf(st.session_state.job_info, edited_cv_content, config)
+                config = load_config()  
+                pdf_data = generate_cv_pdf(st.session_state.job_info, edited_cv_content, config)
+                if pdf_data:
+                    st.session_state.cv_pdf = pdf_data
             
             if hasattr(st.session_state, 'cv_pdf'):
                 st.subheader("CV Preview")
