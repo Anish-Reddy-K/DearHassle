@@ -1,29 +1,87 @@
+"""
+Dear Hassle - AI-Powered Job Application Assistant
+===============================================
+
+Created by Anish Reddy (https://anishreddyk.com)
+Version: 1.0.0
+License: MIT
+Repository: https://github.com/Anish-Reddy-K/DearHassle.git
+
+Description:
+-----------
+Dear Hassle is an AI-powered tool that helps streamline the job application process 
+by generating tailored cover letters, follow-up emails, and LinkedIn messages. 
+
+It uses OpenAI's GPT models to analyze job descriptions and create personalized 
+application materials that highlight relevant experience and qualifications.
+
+Features:
+--------
+- Cover Letter Generation: Creates customized cover letters based on job descriptions
+- Follow-up Email Templates: Generates professional follow-up email templates
+- LinkedIn Messages: Crafts connection messages within LinkedIn's character limit
+- Resume Context: Uses your resume to ensure relevant experience is highlighted
+- Customizable Templates: Allows users to define their own templates for all message types
+
+Requirements:
+-----------
+- Python 3.10+
+- OpenAI API key
+- Required packages: streamlit, openai, python-dotenv, reportlab, PyPDF2
+
+Environment Variables:
+-------------------
+OPENAI_API_KEY: Your OpenAI API key
+
+Usage:
+-----
+1. Install requirements: pip install -r requirements.txt
+2. Run the application: streamlit run main.py
+3. Enter your OpenAI API key in the sidebar
+4. Upload your resume
+5. Paste job description and generate documents
+
+Support:
+-------
+If you find this tool helpful, consider supporting its development:
+https://www.buymeacoffee.com/anishreddyk
+
+Contact:
+-------
+Email: anishreddy3456@gmail.com
+LinkedIn: https://linkedin.com/in/anishreddyk
+Portfolio: https://anishreddyk.com
+
+Copyright (c) 2024 Anish Reddy
+"""
+
+# imports
 import streamlit as st
 from openai import OpenAI
 import os
+import io
 from dotenv import load_dotenv
-from reportlab.lib.pagesizes import LETTER
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from datetime import date
 import tempfile
 import base64
 import json
 from pathlib import Path
 import PyPDF2
-import io
 
-# Load environment variables
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.enums import TA_CENTER
+
+# load environment variables
 load_dotenv()
 
+# save API key to .env file
 def save_api_key(api_key):
-    """Save API key to .env file"""
     env_path = Path('.env')
     if env_path.exists():
         with open(env_path, 'r') as f:
             lines = f.readlines()
-        # Update existing OPENAI_API_KEY line or add new one
         key_updated = False
         for i, line in enumerate(lines):
             if line.startswith('OPENAI_API_KEY='):
@@ -38,10 +96,10 @@ def save_api_key(api_key):
         with open(env_path, 'w') as f:
             f.write(f'OPENAI_API_KEY={api_key}\n')
 
-# Initialize OpenAI client with None - will be set when API key is provided
+# initialize OpenAI client with None - will be set when API key is provided
 client = None
 
-# Constants
+# constants
 CONFIG_FILE = "config.json"
 DEFAULT_CONFIG = {
     "personal_info": {
@@ -72,8 +130,8 @@ Sincerely,
     }
 }
 
+# function: load user data from config json file
 def load_config():
-    """Load user configuration from JSON file"""
     try:
         with open(CONFIG_FILE, 'r') as f:
             return json.load(f)
@@ -82,8 +140,8 @@ def load_config():
         save_config(DEFAULT_CONFIG)
         return DEFAULT_CONFIG
     
+# function: ensure templates exist in config, add them if missing
 def ensure_templates_in_config(config):
-    """Ensure templates exist in config, add them if missing"""
     if 'templates' not in config:
         config['templates'] = {
             "email": {
@@ -104,13 +162,13 @@ Sincerely,
         save_config(config)
     return config
 
+# function: save user configuration to JSON file"""
 def save_config(config):
-    """Save user configuration to JSON file"""
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=4)
 
+# function: load resume context from a text file"""
 def load_resume_context():
-    """Load resume context from a text file"""
     config = load_config()
     try:
         with open(config['resume_path'], 'r') as f:
@@ -118,25 +176,25 @@ def load_resume_context():
     except FileNotFoundError:
         return None
     
+# function: save resume content to text file"""
 def save_resume_context(content):
-    """Save resume content to text file"""
     config = load_config()
     with open(config['resume_path'], 'w') as f:
         f.write(content)
 
+# function: extract text content from PDF file"""
 def extract_text_from_pdf(pdf_file):
-    """Extract text content from PDF file"""
     pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file.read()))
     text = ""
     for page in pdf_reader.pages:
         text += page.extract_text() + "\n"
     return text
 
+# function: create a settings sidebar for personal information and templates"""
 def settings_sidebar():
-    """Create a settings sidebar for personal information and templates"""
     st.sidebar.title("Settings")
     
-    # API Key Management
+    # API key Management
     if 'api_key' not in st.session_state:
         st.session_state.api_key = os.getenv('OPENAI_API_KEY', '')
     
@@ -163,7 +221,7 @@ def settings_sidebar():
     
     st.sidebar.divider()
 
-    # Load current config and ensure templates exist
+    # load current config and ensure templates exist
     config = load_config()
     config = ensure_templates_in_config(config)
     personal_info = config['personal_info']
@@ -172,7 +230,7 @@ def settings_sidebar():
     st.sidebar.subheader("Personal Information")
     updated_info = {}
     
-    # Create input fields for each personal info field
+    # create input fields for each personal info field
     for key, value in personal_info.items():
         updated_info[key] = st.sidebar.text_input(
             key.replace('_', ' ').title(),
@@ -180,7 +238,7 @@ def settings_sidebar():
             key=f"settings_{key}"
         )
     
-    # Template settings
+    # template settings
     st.sidebar.divider()
     st.sidebar.subheader("Message Templates")
     
@@ -205,7 +263,7 @@ def settings_sidebar():
             help="Use {placeholder} format. Must be under 200 characters"
         )
     
-    # Update the save button section
+    # update the save button section
     if st.sidebar.button("Save All Settings"):
         config['personal_info'] = updated_info
         config['templates']['email']['subject'] = email_subject
@@ -215,8 +273,8 @@ def settings_sidebar():
         st.sidebar.success("All settings saved successfully!")
         st.rerun()
 
+# function: handle resume upload functionality"""
 def resume_uploader():
-    """Handle resume upload functionality"""
     uploaded_file = st.file_uploader("Upload your resume (TXT or PDF format)", type=['txt', 'pdf'])
     
     if uploaded_file is not None:
@@ -225,29 +283,27 @@ def resume_uploader():
         else:
             content = uploaded_file.getvalue().decode()
         save_resume_context(content)
-        # Remove this success message since we'll show it in main()
-        # st.success("Resume uploaded successfully!")
         return content
     
     return load_resume_context()
 
+# function: Generate LinkedIn connection message using template"""
 def generate_linkedin_message(job_info: dict, config: dict) -> str:
-    """Generate LinkedIn connection message using template"""
     try:
-        # Get template from config
+        # get template from config
         template = config['templates']['linkedin']
         
-        # Create format dict with all possible placeholders
+        # create format dict with all possible placeholders
         format_dict = {
             **job_info,
             **config['personal_info'],
-            'required_skills': job_info['required_skills'].split('<br/>')[0].strip('• ')  # Take first skill only due to character limit
+            'required_skills': job_info['required_skills'].split('<br/>')[0].strip('• ')  # taking first skill only
         }
         
-        # Format the template
+        # format the template
         message = template.format(**format_dict)
         
-        # Ensure message is under 200 characters
+        # ensure message is under 200 characters due to LinkedIn limits
         if len(message) > 200:
             message = message[:197] + "..."
         return message
@@ -255,8 +311,8 @@ def generate_linkedin_message(job_info: dict, config: dict) -> str:
         st.error(f"Error generating LinkedIn message: {str(e)}")
         return f"Hi! I'm interested in the {job_info['position_title']} role at {job_info['company_name']}. Looking forward to connecting!"
     
+# function: extract relevant information from job description using gpt-4o or gpt-4o-mini"""
 def extract_job_info(job_description: str, resume_context: str) -> dict:
-    """Extract relevant information from job description using GPT-4"""
     try:
         system_prompt = """You are an expert AI career consultant. Your task is to:
         1. Analyze the provided job description
@@ -277,7 +333,8 @@ def extract_job_info(job_description: str, resume_context: str) -> dict:
         Focus on technical skills, quantifiable achievements, and specific experience that directly relates to the role."""
 
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            # change to gpt-4o-mini for less API token usage
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"""
@@ -313,20 +370,20 @@ def extract_job_info(job_description: str, resume_context: str) -> dict:
             "candidate_matches": "• Match 1<br/>• Match 2<br/>• Match 3<br/>• Match 4<br/>• Match 5"
         }
     
+# function: generate follow-up email using template"""
 def generate_email(job_info: dict, config: dict) -> tuple:
-    """Generate follow-up email using template"""
     try:
-        # Get templates from config
+        # get templates from config
         subject_template = config['templates']['email']['subject']
         body_template = config['templates']['email']['body']
         
-        # Create format dict with all possible placeholders
+        # create format dict with all possible placeholders
         format_dict = {
             **job_info,
             **config['personal_info']
         }
         
-        # Format the templates
+        # format the templates
         subject = subject_template.format(**format_dict)
         body = body_template.format(**format_dict)
         
@@ -336,8 +393,8 @@ def generate_email(job_info: dict, config: dict) -> tuple:
         return (f"Follow-Up on {job_info['position_title']} Application",
                 f"Hi {job_info['hiring_manager_name']},\n\nFollowing up on my {job_info['position_title']} application.\n\nBest,\n{config['personal_info']['full_name']}")
 
+# function: Generate CV content using gpt-4o or gpt-4o-mini"""
 def generate_cv_content(job_info: dict, resume_context: str) -> dict:
-    """Generate CV content using GPT-4"""
     try:
         system_prompt = """You are an expert CV writer for tech industry applications. 
 
@@ -370,7 +427,8 @@ Guidelines:
 """
 
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",
+            # change to gpt-4o-mini for less API token usage
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f"""
@@ -397,8 +455,10 @@ Guidelines:
             'why_me': "• Default bullet point 1\n• Default bullet point 2\n• Default bullet point 3\n• Default bullet point 4\n• Default bullet point 5"
         }
 
+# *** CUSTOMIZE Cover Letter here ***
+
+# function: generate PDF CV and return as base64 string"""
 def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
-    """Generate PDF CV and return as base64 string"""
     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
         doc = SimpleDocTemplate(
             tmp_file.name,
@@ -418,12 +478,12 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         
         elements = []
         
-        # Header
+        # header
         elements.append(Paragraph("Anish Reddy", styles['Header']))
         elements.append(Paragraph("Waterloo, Canada", styles['ContactInfo']))
         elements.append(Spacer(1, 5))
         
-        # Contact Info
+        # contact Info
         contact_info = (
             "437-557-2209 | "
             '<font color="blue"><u><link href="https://linkedin.com/in/anishreddyk">LinkedIn</link></u></font> | '
@@ -434,7 +494,7 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         elements.append(Paragraph(contact_info, styles['LinkStyle']))
         elements.append(Spacer(1, 30))
         
-        # Date and Company
+        # date and company
         date_today = date.today().strftime("%B %d, %Y")
         header_data = [[f"{job_info['company_name']} Recruitment Team", date_today]]
         header_table = Table(header_data, colWidths=[doc.width/2, doc.width/2])
@@ -445,15 +505,15 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         elements.append(header_table)
         elements.append(Spacer(1, 30))
         
-        # Position
+        # position
         elements.append(Paragraph(f"<u><b>Job application for {job_info['position_title']}</b></u>", styles['Position']))
         elements.append(Spacer(1, 20))
         
-        # Greeting
+        # greeting
         elements.append(Paragraph(f"Dear {job_info['hiring_manager_name']},", styles['Normal']))
         elements.append(Spacer(1, 5))
         
-        # Content sections
+        # content sections
         for section_title, content in [
             ("About Me", cv_content['about_me']),
             (f"Why {job_info['company_name']}?", cv_content['why_company']),
@@ -463,7 +523,7 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
             elements.append(Paragraph(content, styles['Normal']))
             elements.append(Spacer(1, 10))
         
-        # Signature
+        # signature
         elements.append(Spacer(1, 20))
         elements.append(Paragraph("Sincerely,", styles['Normal']))
         elements.append(Paragraph("Anish Reddy", styles['Normal']))
@@ -477,10 +537,8 @@ def generate_cv_pdf(job_info: dict, cv_content: dict) -> str:
         return encoded_pdf
 
 def main():
-    # Update title and add description
     st.set_page_config(page_title="Dear Hassle - Job Application Assistant", layout="wide")
     
-    # Title and branding
     st.title("Dear Hassle ✍️")
     st.markdown("""
         Your AI-powered job application assistant. Generate tailored cover letters, follow-up emails, and LinkedIn messages in seconds.
@@ -492,7 +550,6 @@ def main():
         If you found this tool helpful in your job search, your support would mean a lot! It helps me continue building free tools that make a difference.
     """)
     
-    # Buy Me a Coffee button
     st.markdown("""
         <a href="https://www.buymeacoffee.com/anishreddyk" target="_blank">
             <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="40px">
@@ -501,10 +558,10 @@ def main():
     
     st.divider()
 
-    # Add settings sidebar
+    # settings sidebar
     settings_sidebar()
     
-    # Handle resume upload and display current resume
+    # handle resume upload and display current resume
     resume_context = resume_uploader()
 
     if resume_context is None:
@@ -528,27 +585,28 @@ def main():
         with st.spinner('Analyzing job description and generating documents...'):
             st.session_state.job_info = extract_job_info(job_description, resume_context)
             config = load_config()
-            # Generate all documents at once
+
+            # generate all documents at once
             st.session_state.cv_content = generate_cv_content(st.session_state.job_info, resume_context)
             subject, body = generate_email(st.session_state.job_info, config)
             st.session_state.email_content = {"subject": subject, "body": body}
             st.session_state.linkedin_message = generate_linkedin_message(st.session_state.job_info, config)
     
     if hasattr(st.session_state, 'job_info'):
-        # Initialize current_tab if not present
+        # initialize current_tab if not present
         if 'current_tab' not in st.session_state:
             st.session_state.current_tab = "Cover Letter"
 
-        # Create a key for the radio button to ensure proper state management
+        # create a key for the radio button to ensure proper state management
         current_tab = st.radio(
             "Select Document",
             ["Cover Letter", "Follow-up Email", "LinkedIn Message"],
             horizontal=True,
             label_visibility="hidden",
-            key="doc_selector"  # Add a unique key
+            key="doc_selector"
         )
 
-        # Update the session state if changed
+        # update the session state if changed
         if current_tab != st.session_state.current_tab:
             st.session_state.current_tab = current_tab
         
@@ -600,7 +658,7 @@ def main():
             st.subheader("Email Body:")
             st.code(st.session_state.email_content["body"], language=None, wrap_lines=True)
         
-        elif current_tab == "LinkedIn Message":  # LinkedIn Message
+        elif current_tab == "LinkedIn Message":
             st.subheader("LinkedIn Connection Message:")
             st.code(st.session_state.linkedin_message, language=None, wrap_lines=True)
             st.caption(f"Character count: {len(st.session_state.linkedin_message)}/200")
