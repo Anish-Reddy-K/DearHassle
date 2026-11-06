@@ -1,3 +1,5 @@
+
+
 # Dear Hassle - AI-Powered Job Application Assistant 🤖✍️
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](https://choosealicense.com/licenses/mit/)
@@ -49,7 +51,7 @@ Open your terminal and follow the instructions below:
    
 6. **Set up your OpenAI API key**
    - Get your API key from [OpenAI](https://platform.openai.com/account/api-keys)
-   - Enter your key in the sidebar
+   - Enter your key in the sidebar, or create a `.env` file in the project root with `OPENAI_API_KEY=your_key_here`
 
 ## 💡 Usage Tips
 
