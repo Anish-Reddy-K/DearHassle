@@ -100,7 +100,7 @@ If you found this tool helpful in your job search, your support would mean a lot
 - **Creator**: Anish Reddy
 - **Email**: anishreddy3456@gmail.com
 - **LinkedIn**: [Connect with me](https://linkedin.com/in/anishreddyk)
-- **Portfolio**: [Visit my portfolio](https://anishreddyk.com)
+- **Portfolio**: [Visit my portfolio](https://arkr.ca)
 
 ## 📄 License
 
@@ -108,4 +108,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-<p align="center">Made with ❤️ by <a href="https://anishreddyk.com">Anish Reddy</a></p>
+<p align="center">Made with ❤️ by <a href="https://arkr.ca">Anish Reddy</a></p>
